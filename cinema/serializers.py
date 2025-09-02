@@ -16,34 +16,32 @@ class ActorSerializer(serializers.ModelSerializer):
         model = Actor
         fields = ("id", "first_name", "last_name", "full_name")
 
-    def get_full_name(self, obj):
+    def get_full_name(self, obj: Actor) -> str:
         return f"{obj.first_name} {obj.last_name}"
 
 
 class CinemaHallSerializer(serializers.ModelSerializer):
-    capacity = serializers.IntegerField(read_only=True)
+    capacity = serializers.SerializerMethodField()
 
     class Meta:
         model = CinemaHall
         fields = ["id", "name", "rows", "seats_in_row", "capacity"]
 
+    def get_capacity(self, obj: CinemaHall) -> int:
+        return obj.rows * obj.seats_in_row
+
 
 class MovieListSerializer(serializers.ModelSerializer):
     genres = serializers.SlugRelatedField(
-        many=True, read_only=True, slug_field="name"
+        many=True,
+        read_only=True,
+        slug_field="name"
     )
     actors = serializers.SerializerMethodField()
 
     class Meta:
         model = Movie
-        fields = [
-            "id",
-            "title",
-            "description",
-            "duration",
-            "genres",
-            "actors"
-        ]
+        fields = ["id", "title", "description", "duration", "genres", "actors"]
 
     def get_actors(self, obj: Movie) -> list[str]:
         return [
@@ -60,13 +58,13 @@ class MovieDetailSerializer(serializers.ModelSerializer):
         model = Movie
         fields = "__all__"
 
-    def get_genres(self, obj):
+    def get_genres(self, obj: Movie) -> list[dict]:
         return [
             {"id": genre.id, "name": genre.name}
             for genre in obj.genres.all()
         ]
 
-    def get_actors(self, obj):
+    def get_actors(self, obj: Movie) -> list[dict]:
         return [
             {
                 "id": actor.id,
@@ -128,7 +126,9 @@ class MovieSessionDetailSerializer(serializers.ModelSerializer):
 
 
 class MovieSessionWriteSerializer(serializers.ModelSerializer):
-    movie = serializers.PrimaryKeyRelatedField(queryset=Movie.objects.all())
+    movie = serializers.PrimaryKeyRelatedField(
+        queryset=Movie.objects.all()
+    )
     cinema_hall = serializers.PrimaryKeyRelatedField(
         queryset=CinemaHall.objects.all()
     )
